@@ -131,6 +131,10 @@ docker-compose run watermark test_video.mp4
 - Ubuntu 20.04+
 - Python 3.8+
 
+## 📬 联系方式
+如有问题，请联系作者：
+![weichat.png](weichat.png)
+
 ## 许可证
 
 MIT
