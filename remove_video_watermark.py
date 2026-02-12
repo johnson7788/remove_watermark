@@ -107,9 +107,9 @@ def extract_watermark_mask(tmpdir: Path) -> Path:
     mean_dy = np.abs(np.mean(dy, axis=0))
 
     # 阈值过滤
-    threshold = 10
+    threshold = 8
     salient = ((mean_dx > threshold) | (mean_dy > threshold)).astype(float)
-    salient = normalize(gaussian_filter(salient, sigma=3))
+    salient = normalize(gaussian_filter(salient, sigma=2))
     mask = ((salient > 0.2) * 255).astype(np.uint8)
 
     mask_path = tmpdir / "mask.png"
@@ -124,6 +124,10 @@ def remove_watermark(video_path: str, mask_path: Path, output_path: str):
         "-y", "-stats", "-i", video_path,
         "-acodec", "copy",
         "-vf", f"removelogo={str(mask_path)}",
+        "-c:v", "libx265",
+        "-crf", "18",
+        "-preset", "slow",
+        "-tag:v", "hvc1",
         output_path
     ]
     subprocess.run(cmd, check=True)
