@@ -1,6 +1,6 @@
 # 视频水印工具箱
 
-集视频水印去除和Logo添加于一体的工具箱。
+集视频水印去除，视频高清化，视频Logo添加于一体的工具箱。
 
 ## 功能介绍
 
@@ -10,13 +10,31 @@
 ### 2. Logo添加
 为视频添加Logo水印，支持指定位置、大小和透明度。
 
+### 3. 图片高清化
+使用 Upscayl 对图片进行超分辨率放大，支持 2x/3x/4x 放大倍数。
+
+### 4. 视频高清化
+使用 Upscayl 对视频进行逐帧超分辨率放大，生成高清视频（H.265 编码）。
+
 ---
+
+## 示例视频
+原始带logo的视频
+[test_video.mp4](test_video.mp4)
+去掉logo
+[output.mp4](output.mp4)
+高清化
+[output_hd.mp4](output_hd.mp4)
+加上logo
+[output_hd_logo.mp4](output_hd_logo.mp4)
 
 ## 特性
 
 - ✅ 自动水印检测（基于多帧图像分析）
 - ✅ 支持多种 Logo 位置（左上/右上/左下/右下/居中）
 - ✅ 可调节 Logo 大小和透明度
+- ✅ 图片超分辨率放大（Upscayl）
+- ✅ 视频超分辨率放大（Upscayl）
 - ✅ CPU 友好，本地即可运行
 - ✅ 支持本地部署和 Docker 部署
 
@@ -86,6 +104,22 @@ python add_logo.py output.mp4 logo.png -p top-right -s 1.5 -o 1 -m 20
 output_logo.mp4文件中
 ```
 
+### 视频高清化
+
+```bash
+# 默认 4x 放大
+python upscale_video.py input.mp4
+
+# 2x 放大
+python upscale_video.py input.mp4 -s 2
+
+# 指定输出路径
+python upscale_video.py input.mp4 -s 4 -o output_hd.mp4
+
+# 4 线程并发加速
+python upscale_video.py input.mp4 -w 4 -v
+```
+
 ### 参数说明
 
 | 参数 | 说明 | 默认值 |
@@ -104,6 +138,62 @@ output_logo.mp4文件中
 | `-o, --opacity` | 透明度 (0.0~1.0) | 1.0 |
 | `-m, --margin` | 距边缘像素间距 | 10 |
 | `-v, --verbose` | 显示详细输出 | False |
+| **图片高清化** |
+| `-i, --input` | 输入图片路径 | 必填 |
+| `-o, --output` | 输出图片路径 | 必填 |
+| `-n, --model` | Upscayl 模型名称 | upscayl-standard-4x |
+| `-s, --scale` | 放大倍数：2/3/4 | 4 |
+| `-f, --format` | 输出格式 | png |
+| **视频高清化** |
+| `-s` | 放大倍数：2/3/4（默认 4） | 4 |
+| `-o` | 输出路径（默认 输入文件_upscaled.mp4） | `{输入名}_upscaled.{后缀}` |
+| `-w` | 并发线程数（默认 1，可提高加速） | 1 |
+| `-n` | upscayl 模型名称 | upscayl-standard-4x |
+| `-v` | 显示详细信息 | False |
+| `--keep-frames` | 保留中间帧文件（调试用） | False |
+
+---
+
+## 图片高清化 (Upscayl)
+
+### 安装 Upscayl
+
+```bash
+cd upscayl-cli
+go mod download
+make local
+```
+
+编译成功后，可执行文件会生成在：`release/build/local`
+
+```bash
+# 安装到系统路径
+mv release/build/local/upscayl /usr/local/bin
+
+# 验证安装
+upscayl --version
+upscayl run --help
+```
+
+### 使用方法
+
+```bash
+# 基本用法（4x 放大）
+upscayl run -i logo.png -o logo_upscaled.png -n upscayl-standard-4x -s 4 -f png
+
+# 2x 放大
+upscayl run -i input.png -o output.png -n upscayl-standard-2x -s 2 -f png
+```
+
+### 可用模型
+
+| 模型名称 | 放大倍数 | 适用场景 |
+|----------|----------|----------|
+| `upscayl-standard-2x` | 2x | 通用图片 |
+| `upscayl-standard-3x` | 3x | 通用图片 |
+| `upscayl-standard-4x` | 4x | 通用图片 |
+| `upscayl-photo-4x` | 4x | 照片优化 |
+| `upscayl-anime-4x` | 4x | 动漫/插画 |
 
 ---
 
@@ -136,6 +226,12 @@ docker run --rm -v $(pwd):/app watermark-remover add_logo.py test_video.mp4 logo
 
 ### Logo添加原理
 使用 FFmpeg 的 `overlay` 滤镜将 Logo 叠加到视频指定位置，支持缩放和透明度调整。
+
+### 视频高清化原理
+1. **分析视频** - 获取分辨率、帧率、时长等信息
+2. **提取帧** - 用 ffmpeg 将视频拆为逐帧 PNG
+3. **逐帧放大** - 调用 upscayl CLI 对每帧进行超分辨率放大
+4. **合成视频** - 将放大后的帧 + 原始音频合成为高清视频（H.265 编码）
 
 ---
 
